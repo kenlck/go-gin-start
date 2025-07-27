@@ -160,6 +160,6 @@ make migrate-apply
 ## Development
 
 - Edit code in `internal/` for features and logic.
-- Add new migrations in `migrations/` as needed.
+- To change database structure, edit `schema.pg.hcl` (see Generating Migrations section).
 
 ---
