@@ -1,13 +1,13 @@
 # go-gin-start
 
-A starter Go backend API project using Gin, PostgreSQL (pgx), Squirrel, golang-migrate, JWT authentication, bcrypt password hashing, and godotenv for configuration.
+A starter Go backend API project using Gin, PostgreSQL (pgx), Squirrel, Atlas for migrations, JWT authentication, bcrypt password hashing, and godotenv for configuration.
 
 ## Features
 
 - JWT-based authentication with login endpoint
 - Password hashing and validation using bcrypt
 - Middleware to protect routes using JWT
-- Automatic migration on app startup using golang-migrate
+- Database migrations managed with Atlas
 - Loads `DATABASE_URL` and `JWT_SECRET` from `.env`
 - Multi-stage Dockerfile for containerized builds
 
@@ -16,7 +16,7 @@ A starter Go backend API project using Gin, PostgreSQL (pgx), Squirrel, golang-m
 - [Gin](https://github.com/gin-gonic/gin) - Web framework
 - [pgx](https://github.com/jackc/pgx) - PostgreSQL driver
 - [Squirrel](https://github.com/Masterminds/squirrel) - SQL query builder
-- [golang-migrate](https://github.com/golang-migrate/migrate) - DB migrations
+- [Atlas](https://atlasgo.io/) - Database migrations
 - [JWT](https://github.com/golang-jwt/jwt) - Authentication
 - [bcrypt](https://pkg.go.dev/golang.org/x/crypto/bcrypt) - Password hashing
 - [godotenv](https://github.com/joho/godotenv) - .env loader
@@ -35,7 +35,8 @@ A starter Go backend API project using Gin, PostgreSQL (pgx), Squirrel, golang-m
 │   ├── handler/
 │   └── model/
 ├── migrations/
-│   └── 001_create_users.sql
+│   └── 20250727030018_add_users.sql
+├── schema.pg.hcl
 ```
 
 ## Setup
@@ -48,8 +49,11 @@ A starter Go backend API project using Gin, PostgreSQL (pgx), Squirrel, golang-m
 
    ```
    DATABASE_URL=postgres://user:password@localhost:5432/go_gin_start?sslmode=disable
+   DEV_DATABASE_URL=postgres://user:password@localhost:5432/go_gin_start_dev?sslmode=disable
    JWT_SECRET=your_jwt_secret_key
    ```
+
+   **Note:** Both `DATABASE_URL` and `DEV_DATABASE_URL` must be present in `.env` for migrations to work.
 
 3. **Install dependencies**
 
@@ -90,51 +94,68 @@ docker run --env-file .env -p 8080:8080 go-gin-start
 
 ## Makefile Commands
 
-The Makefile automates common development and migration tasks. Migration commands automatically load `DATABASE_URL` from your `.env` file.
+The Makefile automates common development and migration tasks.
 
 **Available commands:**
 
-- `make dev` — Run the app locally
-- `make migrate-up` — Apply all pending migrations (uses .env)
-- `make migrate-down` — Roll back the last migration (uses .env)
-- `make migrate-create` — Create a new migration interactively
+- `make dev` — Run the app locally (with hot reload if air is installed)
+- `make install` — Install dependencies
+- `make migrate-create` — Create a migration using Atlas (see below)
+- `make migrate-apply` — Apply migrations using DATABASE_URL from .env
 
 **Usage example:**
 
 ```sh
 make dev
-make migrate-up
 make migrate-create
+make migrate-apply
 ```
 
-You can override `DATABASE_URL` if needed:
+### Migration Create Command
 
-```sh
-make migrate-up DATABASE_URL="your_connection_string"
-```
+`make migrate-create`
+
+- Prompts for migration name (spaces replaced with underscores).
+- Uses `DEV_DATABASE_URL` from `.env`.
+- Errors if `DATABASE_URL` or `DEV_DATABASE_URL` is missing, or if both are the same.
+- Example:
+  ```sh
+  make migrate-create
+  ```
+
+### Migration Apply Command
+
+`make migrate-apply`
+
+- Uses `DATABASE_URL` from `.env`.
+- Errors if `DATABASE_URL` is missing.
+- Example:
+  ```sh
+  make migrate-apply
+  ```
 
 ## Generating Migrations
 
-1. **Install golang-migrate CLI**
-   See [golang-migrate docs](https://github.com/golang-migrate/migrate/tree/master/cmd/migrate) or use Homebrew:
+1. **Install Atlas CLI**
+   See [Atlas docs](https://atlasgo.io/getting-started/) or use Homebrew:
 
    ```
-   brew install golang-migrate
+   brew install ariga/tap/atlas
    ```
 
-2. **Create a new migration**
+2. **Make changes to `schema.pg.hcl`**
+   Edit this file to define your desired database schema.
+
+3. **Create a migration**
 
    ```
-   migrate create -ext sql -dir migrations -seq <migration_name>
+   make migrate-create
    ```
 
-   Example:
-
+4. **Apply migrations**
    ```
-   migrate create -ext sql -dir migrations -seq add_email_to_users
+   make migrate-apply
    ```
-
-3. **Edit the generated .sql files in `migrations/` as needed.**
 
 ## Development
 
