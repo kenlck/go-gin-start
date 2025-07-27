@@ -23,11 +23,11 @@ migrate-create:
 	fi; \
 	read -p "Migration name: " name; \
 	name=$${name// /_}; \
-	atlas migrate diff $$name --dir "file://migrations" --to "file://schema.pg.hcl" --dev-url "$$dev_db_url"
+	atlas migrate diff --env local $$name
 
 migrate-apply:
 	@if ! grep -q '^DATABASE_URL=' .env; then \
 		echo "Error: DATABASE_URL not found in .env"; exit 1; \
 	fi; \
 	db_url=$$(grep '^DATABASE_URL=' .env | cut -d'=' -f2-); \
-	atlas migrate apply --dir "file://migrations" --url "$$db_url"
+	atlas migrate apply --env local
